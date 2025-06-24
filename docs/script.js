@@ -1,4 +1,3 @@
-
 let calendarMonth = new Date().getMonth();
 let calendarYear = new Date().getFullYear();
 
@@ -25,7 +24,7 @@ document.getElementById("start").onclick = async () => {
   const startTime = manualStart || now.toTimeString().substring(0, 5);
   if (!manualStart) document.getElementById("manualStart").value = startTime;
 
-  const res = await fetch('/api/start', {
+  const res = await fetch("https://timetrack-api.onrender.com/api/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ date: isoDate, start: startTime }),
@@ -51,7 +50,7 @@ document.getElementById("submit").onclick = async () => {
   const pause = document.getElementById("pause").value || 60;
   const note = document.getElementById("note").value || "";
 
-  await fetch("/api/finish", {
+  await fetch("https://timetrack-api.onrender.com/api/finish", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ row, end, pause, note }),
@@ -68,7 +67,7 @@ async function loadWeeklyView() {
   const formattedStart = startDate.toISOString().split("T")[0];
   const formattedEnd = today.toISOString().split("T")[0];
 
-  const res = await fetch(`/api/range?start=${formattedStart}&end=${formattedEnd}`);
+  const res = await fetch(`https://timetrack-api.onrender.com/api/range?start=${formattedStart}&end=${formattedEnd}`);
   const data = await res.json();
   const tbody = document.getElementById("hebdo-body");
   tbody.innerHTML = "";
@@ -139,7 +138,7 @@ async function updateCell(date, newStart, newEnd, pause, rowElement) {
   const end = newEnd || rowInputs[1].value;
   const pauseMinutes = parseInt((pause || "60").toString().replace(" min", ""));
 
-  const res = await fetch("/api/update", {
+  const res = await fetch("https://timetrack-api.onrender.com/api/update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ date, start, end, pause: pauseMinutes }),
@@ -163,121 +162,4 @@ function formatMinutes(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
-}
-
-// Vue calendrier
-async function loadCalendarView() {
-  const grid = document.getElementById("calendar-grid");
-  grid.innerHTML = "";
-
-  const year = calendarYear;
-  const month = calendarMonth;
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const totalDays = lastDay.getDate();
-  const startDayOfWeek = firstDay.getDay();
-
-  const title = firstDay.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  document.getElementById("calendar-title").textContent = title.charAt(0).toUpperCase() + title.slice(1);
-
-  const start = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
-  const end = `${year}-${(month + 1).toString().padStart(2, '0')}-${totalDays}`;
-  const res = await fetch(`/api/range?start=${start}&end=${end}`);
-  const data = await res.json();
-
-  const datesMap = new Map();
-  data.forEach(row => {
-    const [date, debut, fin, pause, duration, note] = row;
-    const status = debut && fin ? "complet" : debut ? "partiel" : "absent";
-    datesMap.set(date, { debut, fin, status, note, pause });
-  });
-
-  for (let i = 0; i < (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1); i++) {
-    const empty = document.createElement("div");
-    grid.appendChild(empty);
-  }
-
-  for (let d = 1; d <= totalDays; d++) {
-    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-    const cell = document.createElement("div");
-    const data = datesMap.get(dateStr);
-
-    let bg = "bg-gray-200";
-    if (data?.status === "complet") bg = "bg-green-300";
-    else if (data?.status === "partiel") bg = "bg-yellow-300";
-
-    cell.className = `${bg} p-2 rounded cursor-pointer hover:bg-opacity-70`;
-    cell.textContent = d;
-    cell.onclick = () => {
-      openModal(dateStr, data?.debut, data?.fin, data?.status, data?.note || "", data?.pause || "60");
-    };
-    grid.appendChild(cell);
-  }
-}
-
-// Navigation mois
-document.getElementById("prev-month").onclick = () => {
-  calendarMonth--;
-  if (calendarMonth < 0) {
-    calendarMonth = 11;
-    calendarYear--;
-  }
-  loadCalendarView();
-};
-
-document.getElementById("next-month").onclick = () => {
-  calendarMonth++;
-  if (calendarMonth > 11) {
-    calendarMonth = 0;
-    calendarYear++;
-  }
-  loadCalendarView();
-};
-
-// Export Excel
-document.getElementById("export-month").onclick = () => {
-  const year = calendarYear;
-  const month = calendarMonth + 1;
-  const start = `${year}-${month.toString().padStart(2, '0')}-01`;
-  const endDate = new Date(year, calendarMonth + 1, 0);
-  const end = `${year}-${month.toString().padStart(2, '0')}-${endDate.getDate()}`;
-  window.open(`/api/export?start=${start}&end=${end}`, "_blank");
-};
-
-// Modal calendrier
-function openModal(date, start = "", end = "", status = "", note = "", pause = "60") {
-  document.getElementById("modal-date-label").textContent = date;
-  document.getElementById("modal-start").value = start || "";
-  document.getElementById("modal-end").value = end || "";
-  document.getElementById("modal-pause").value = parseInt(pause) || 60;
-  document.getElementById("modal-note").value = note || "";
-  document.getElementById("calendar-modal").classList.remove("hidden");
-
-  document.getElementById("modal-save").onclick = async () => {
-    const newStart = document.getElementById("modal-start").value;
-    const newEnd = document.getElementById("modal-end").value;
-    const newPause = parseInt(document.getElementById("modal-pause").value) || 60;
-    const newNote = document.getElementById("modal-note").value;
-
-    await fetch("/api/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        start: newStart,
-        end: newEnd,
-        pause: newPause,
-        note: newNote
-      }),
-    });
-
-    closeModal();
-    loadCalendarView();
-  };
-
-  document.getElementById("modal-cancel").onclick = closeModal;
-}
-
-function closeModal() {
-  document.getElementById("calendar-modal").classList.add("hidden");
 }
