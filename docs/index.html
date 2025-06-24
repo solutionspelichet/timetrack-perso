@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#2563eb" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimeTrack Perso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-4">
+
+  <div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">🕒 TimeTrack Perso</h1>
+
+    <!-- Onglets -->
+    <div class="flex space-x-4 mb-4">
+      <button class="tab-button font-semibold px-4 py-2 bg-blue-200 rounded" data-tab="pointage">Pointage</button>
+      <button class="tab-button font-semibold px-4 py-2 bg-gray-200 rounded" data-tab="hebdo">Hebdo</button>
+      <button class="tab-button font-semibold px-4 py-2 bg-gray-200 rounded" data-tab="calendrier">Calendrier</button>
+    </div>
+
+    <!-- Pointage -->
+    <div class="tab-content" id="pointage">
+      <button id="start" class="bg-green-500 text-white px-4 py-2 rounded mb-2">▶️ Démarrer</button>
+      <button id="stop" class="bg-red-500 text-white px-4 py-2 rounded mb-4">⏹️ Terminer</button>
+
+      <div class="space-y-2">
+        <label class="block">Heure de début (manuelle) :
+          <input type="time" id="manualStart" class="border px-2 py-1" />
+        </label>
+        <label class="block">Heure fin :
+          <input type="time" id="manualEnd" class="border px-2 py-1" />
+        </label>
+        <label class="block">Pause déjeuner (min) :
+          <input type="number" id="pause" value="60" class="border px-2 py-1" />
+        </label>
+        <label class="block">Note :
+          <input type="text" id="note" class="border px-2 py-1 w-full" />
+        </label>
+      </div>
+
+      <button id="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">📤 Enregistrer</button>
+    </div>
+
+    <!-- Hebdo -->
+    <div class="tab-content hidden" id="hebdo">
+      <h2 class="text-lg font-semibold mb-2">Semaine en cours</h2>
+      <table class="w-full text-sm border">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2 border">Jour</th>
+            <th class="p-2 border">Début</th>
+            <th class="p-2 border">Fin</th>
+            <th class="p-2 border">Pause</th>
+            <th class="p-2 border">Durée</th>
+            <th class="p-2 border">Note</th>
+          </tr>
+        </thead>
+        <tbody id="hebdo-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Calendrier -->
+    <div class="tab-content hidden" id="calendrier">
+      <div class="flex justify-between items-center mb-2">
+        <button id="prev-month" class="px-3 py-1 bg-gray-300 rounded">◀️</button>
+        <h3 id="calendar-title" class="text-lg font-semibold"></h3>
+        <button id="next-month" class="px-3 py-1 bg-gray-300 rounded">▶️</button>
+      </div>
+
+      <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center text-sm"></div>
+
+      <div class="mt-4 flex justify-end">
+        <button id="export-month" class="px-4 py-2 bg-blue-600 text-white rounded">📤 Exporter ce mois</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de modification calendrier -->
+  <div id="calendar-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded p-6 w-full max-w-md shadow-xl">
+      <h2 class="text-lg font-bold mb-4">Modifier le pointage du <span id="modal-date-label"></span></h2>
+
+      <label class="block mb-2">Heure de début :
+        <input type="time" id="modal-start" class="w-full border p-1" />
+      </label>
+      <label class="block mb-2">Heure de fin :
+        <input type="time" id="modal-end" class="w-full border p-1" />
+      </label>
+      <label class="block mb-2">Pause (min) :
+        <input type="number" id="modal-pause" class="w-full border p-1" value="60" />
+      </label>
+      <label class="block mb-2">Note :
+        <input type="text" id="modal-note" class="w-full border p-1" />
+      </label>
+
+      <div class="mt-4 flex justify-between">
+        <button id="modal-save" class="bg-blue-600 text-white px-4 py-2 rounded">💾 Enregistrer</button>
+        <button id="modal-cancel" class="bg-gray-300 px-4 py-2 rounded">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(() => console.log('✅ Service Worker enregistré'))
+      .catch(err => console.error('❌ SW erreur :', err));
+  }
+</script>
+
+</body>
+</html>
