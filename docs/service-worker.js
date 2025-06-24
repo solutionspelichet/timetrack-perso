@@ -3,12 +3,12 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open('timetrack-cache').then(cache => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/script.js',
-        '/style.css',
-        '/icon-192.png',
-        '/icon-512.png'
+        './',
+        './index.html',
+        './script.js',
+        './style.css',
+        './icon-192.png',
+        './icon-512.png'
       ]);
     })
   );
