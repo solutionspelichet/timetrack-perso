@@ -163,3 +163,114 @@ function formatMinutes(minutes) {
   const m = minutes % 60;
   return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
 }
+
+// Vue calendrier
+async function loadCalendarView() {
+  const grid = document.getElementById("calendar-grid");
+  grid.innerHTML = "";
+
+  const year = calendarYear;
+  const month = calendarMonth;
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const totalDays = lastDay.getDate();
+  const startDayOfWeek = firstDay.getDay();
+
+  const title = firstDay.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  document.getElementById("calendar-title").textContent = title.charAt(0).toUpperCase() + title.slice(1);
+
+  const start = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+  const end = `${year}-${(month + 1).toString().padStart(2, '0')}-${totalDays}`;
+  console.log("→ Calendrier : fetch de", start, "à", end);
+
+  const res = await fetch(`https://timetrack-api.onrender.com/api/range?start=${start}&end=${end}`);
+  const data = await res.json();
+  console.log("← Calendrier : réponse", data);
+
+  const datesMap = new Map();
+  data.forEach(row => {
+    const [date, debut, fin, pause, duration, note] = row;
+    const status = debut && fin ? "complet" : debut ? "partiel" : "absent";
+    datesMap.set(date, { debut, fin, status, note, pause });
+  });
+
+  for (let i = 0; i < (startDayOfWeek === 0 ? 6 : startDayOfWeek - 1); i++) {
+    const empty = document.createElement("div");
+    grid.appendChild(empty);
+  }
+
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+    const cell = document.createElement("div");
+    const data = datesMap.get(dateStr);
+
+    let bg = "bg-gray-200";
+    if (data?.status === "complet") bg = "bg-green-300";
+    else if (data?.status === "partiel") bg = "bg-yellow-300";
+
+    cell.className = `${bg} p-2 rounded cursor-pointer hover:bg-opacity-70`;
+    cell.textContent = d;
+    cell.onclick = () => {
+      openModal(dateStr, data?.debut, data?.fin, data?.status, data?.note || "", data?.pause || "60");
+    };
+    grid.appendChild(cell);
+  }
+}
+
+// Navigation mois
+document.getElementById("prev-month").onclick = () => {
+  calendarMonth--;
+  if (calendarMonth < 0) {
+    calendarMonth = 11;
+    calendarYear--;
+  }
+  loadCalendarView();
+};
+
+document.getElementById("next-month").onclick = () => {
+  calendarMonth++;
+  if (calendarMonth > 11) {
+    calendarMonth = 0;
+    calendarYear++;
+  }
+  loadCalendarView();
+};
+
+// Modal calendrier
+function openModal(date, start = "", end = "", status = "", note = "", pause = "60") {
+  document.getElementById("modal-date-label").textContent = date;
+  document.getElementById("modal-start").value = start || "";
+  document.getElementById("modal-end").value = end || "";
+  document.getElementById("modal-pause").value = parseInt(pause) || 60;
+  document.getElementById("modal-note").value = note || "";
+  document.getElementById("calendar-modal").classList.remove("hidden");
+
+  document.getElementById("modal-save").onclick = async () => {
+    const newStart = document.getElementById("modal-start").value;
+    const newEnd = document.getElementById("modal-end").value;
+    const newPause = parseInt(document.getElementById("modal-pause").value) || 60;
+    const newNote = document.getElementById("modal-note").value;
+
+    await fetch("https://timetrack-api.onrender.com/api/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date,
+        start: newStart,
+        end: newEnd,
+        pause: newPause,
+        note: newNote
+      }),
+    });
+
+    closeModal();
+    loadCalendarView();
+  };
+
+  document.getElementById("modal-cancel").onclick = closeModal;
+}
+
+function closeModal() {
+  document.getElementById("calendar-modal").classList.add("hidden");
+}
+
